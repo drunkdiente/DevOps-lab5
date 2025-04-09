@@ -5,7 +5,7 @@ from .settings import settings
 from .routers import router
 
 app = FastAPI(debug=False)
-app.include_router(router=router)
+app.include_router(user.router, prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run(
