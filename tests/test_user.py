@@ -2,10 +2,9 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from src.main import app
-from src.fake_db import db
+from src.main import app  # Импортируем ваше приложение FastAPI
 
-client = TestClient(app)
+client = TestClient(app)  # Создаем тестовый клиент
 
 def test_get_existed_user():
     # Предварительно создаем пользователя для теста
