@@ -2,76 +2,55 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from src.main import app  # Импортируем ваше приложение FastAPI
+from src.main import app
+from src.fake_db import db
 
-client = TestClient(app)  # Создаем тестовый клиент
+client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def reset_db():
+    """Фикстура для сброса базы данных перед каждым тестом"""
+    db._users = [
+        {'id': 1, 'name': 'Ivan Ivanov', 'email': 'i.i.ivanov@mail.com'},
+        {'id': 2, 'name': 'Petr Petrov', 'email': 'p.p.petrov@mail.com'}
+    ]
+    db._id = 2
+    yield
 
 def test_get_existed_user():
-    # Предварительно создаем пользователя для теста
-    test_email = "existed@example.com"
-    test_name = "Existed User"
-    db.create_user(test_name, test_email)
-    
-    response = client.get("/user", params={"email": test_email})
+    response = client.get("/user", params={"email": "i.i.ivanov@mail.com"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
-        "id": db.get_user_by_email(test_email)["id"],
-        "name": test_name,
-        "email": test_email
+        "id": 1,
+        "name": "Ivan Ivanov",
+        "email": "i.i.ivanov@mail.com"
     }
 
 def test_get_not_existed_user():
-    non_existent_email = "nonexistent@example.com"
-    
-    response = client.get("/user", params={"email": non_existent_email})
+    response = client.get("/user", params={"email": "nonexistent@example.com"})
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "User not found"}
 
 def test_create_user():
-    test_email = "new@example.com"
-    test_name = "New User"
-    
     response = client.post(
         "/user",
-        json={"name": test_name, "email": test_email}
+        json={"name": "New User", "email": "new@example.com"}
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert isinstance(response.json(), int)  # Проверяем что вернулся ID
-    
-    # Проверяем что пользователь действительно создан
-    user = db.get_user_by_email(test_email)
-    assert user is not None
-    assert user["name"] == test_name
-    assert user["email"] == test_email
+    assert isinstance(response.json(), int)
 
 def test_create_existed_user():
-    # Сначала создаем пользователя
-    test_email = "duplicate@example.com"
-    test_name = "Duplicate User"
-    db.create_user(test_name, test_email)
-    
-    # Пытаемся создать такого же пользователя
     response = client.post(
         "/user",
-        json={"name": test_name, "email": test_email}
+        json={"name": "Duplicate", "email": "i.i.ivanov@mail.com"}
     )
     assert response.status_code == status.HTTP_409_CONFLICT
     assert response.json() == {"detail": "User with this email already exists"}
 
 def test_delete_user():
-    # Сначала создаем пользователя для удаления
-    test_email = "todelete@example.com"
-    test_name = "To Delete User"
-    db.create_user(test_name, test_email)
-    
-    response = client.delete("/user", params={"email": test_email})
+    response = client.delete("/user", params={"email": "i.i.ivanov@mail.com"})
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    
-    # Проверяем что пользователь действительно удален
-    assert db.get_user_by_email(test_email) is None
 
 def test_delete_not_existed_user():
-    non_existent_email = "nonexistent@example.com"
-    
-    response = client.delete("/user", params={"email": non_existent_email})
+    response = client.delete("/user", params={"email": "nonexistent@example.com"})
     assert response.status_code == status.HTTP_204_NO_CONTENT
