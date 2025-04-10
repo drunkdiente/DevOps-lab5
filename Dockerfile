@@ -2,7 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Вместо requirements.txt
 RUN pip install --no-cache-dir \
     fastapi==0.68.0 \
     uvicorn==0.15.0 \
