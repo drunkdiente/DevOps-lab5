@@ -24,9 +24,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
+        env:
+          DOCKER_BUILDKIT: 0  # Основное изменение
         uses: docker/build-push-action@v4
         with:
-          context: .  # Используем текущий каталог как контекст сборки
+          context: .
           file: ./Dockerfile
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/my-app:latest
